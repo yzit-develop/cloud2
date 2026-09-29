@@ -1,0 +1,25 @@
+# ===== 秘密情報（絶対にコミットしない）=====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+local.settings.json
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ===== Node =====
+node_modules/
+dist/
+
+# ===== Azure Developer CLI =====
+.azure/
+
+# ===== OS・エディタ =====
+.DS_Store
+Thumbs.db

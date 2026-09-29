@@ -1,0 +1,20 @@
+{
+  // クラウド利用Ⅱ 演習用の開発環境（GitHub Codespaces）
+  // コマ2の時点では Python だけを使う。Azure 関連のツールはコマ4の開始状態で追加する。
+  "name": "cloud2",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "hostRequirements": {
+    "cpus": 2
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python"
+      ],
+      "settings": {
+        "files.encoding": "utf8",
+        "files.eol": "\n"
+      }
+    }
+  }
+}

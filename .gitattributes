@@ -1,0 +1,9 @@
+# テキストファイルの改行コードを LF に統一する（Windows で編集しても CRLF にしない）
+# Codespaces（Linux）で動かすシェルスクリプトや設定ファイルが、改行コードの違いで壊れるのを防ぐ
+* text=auto eol=lf
+
+# バイナリとして扱うもの
+*.png binary
+*.jpg binary
+*.pdf binary
+*.xlsx binary
