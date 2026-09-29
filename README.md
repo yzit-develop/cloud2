@@ -20,4 +20,4 @@ git switch -c lessonNN upstream/lessonNN-start   # NN はコマ番号（例: 08�
 
 ## メモ
 
-（ここに自分用のメモを書いてよい）
+コマ2で作成
