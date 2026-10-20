@@ -24,6 +24,15 @@ def trim_history(messages, budget):
       3. 1件でも収まらなかったら、それより古いメッセージはすべて捨てる（途中を抜かさない）
       4. 返すリストは古い順のまま。引数の messages は書き換えない
     """
-    # TODO(コマ7 演習手順4): ここを実装する。
-    #   いまは何も捨てずに、すべてをそのまま返している。
-    return list(messages)
+    result = []
+    total = 0
+
+    for message in reversed(messages):
+        cost = estimate_tokens(message)
+        if result and total + cost > budget:
+            break
+        result.append(message)
+        total += cost
+    result.reverse()
+
+    return result

@@ -219,10 +219,10 @@ async def chat(req: Request) -> StreamingResponse:
 
     # TODO(コマ7 演習手順5-1): 送る messages を、会話の履歴から組み立てる。
     #   いまは今回の質問しか送っていないので、モデルはそれまでの会話を知らない。
-    messages = [
-        {"role": "system", "content": config["system_prompt"]},
-        {"role": "user", "content": message},
-    ]
+    history = load_history(conversation_id, config["max_history_messages"])
+    history.append({"role": "user", "content": message})
+    messages = [{"role": "system", "content": config["system_prompt"]}] + trim_history(history, budget)
+
 
     def generate():
         # 最初のイベント: 会話の ID と、モデルに送ったメッセージの件数を知らせる
@@ -231,14 +231,20 @@ async def chat(req: Request) -> StreamingResponse:
         try:
             # TODO(コマ7 演習手順5-2): いまは応答を最後まで受け取ってから、まとめて1回で送っている。
             #   受け取ったそばから、少しずつブラウザに送るように書き換える。
-            reply = "".join(llm.stream_chat(messages, config["max_output_tokens"]))
-            yield sse({"type": "delta", "text": reply})
+            parts = []
+            for piece in llm.stream_chat(messages, config["max_output_tokens"]):
+                parts.append(piece)
+                yield sse({"type": "delta", "text": piece})
+            reply = "".join(parts)
+
         except llm.LLMError as e:
             # 途中で失敗した。HTTP の状態（200）は送ってしまっているので、エラーもイベントで知らせる
             yield sse({"type": "error", "message": str(e)})
             return
 
         # TODO(コマ7 演習手順5-3): 応答が最後まで届いたら、質問と応答を Cosmos DB に保存する。
+        save_message(conversation_id, "user", message, user_created_at)
+        save_message(conversation_id, "assistant", reply, now_iso())
 
         yield sse({"type": "end"})
 
