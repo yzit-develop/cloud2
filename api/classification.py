@@ -37,10 +37,10 @@ class InquiryClassification(BaseModel):
 
     category: Category = Field(description="問い合わせの分類")
 
-    # TODO(コマ8 演習手順4): 残りの3つの項目を定義する（演習手順書を見て書く）。
-    #   priority    : 対応の優先度。"高"・"中"・"低" のどれか
-    #   summary     : 問い合わせの要約（文字列）
-    #   needs_human : AI では判断できず、人が確認すべきなら true（真偽値）
+    priority: Priority = Field(description="対応の優先度")
+    summary: str = Field(description=f"問い合わせの要約（{SUMMARY_MAX}文字以内）")
+    needs_human: bool = Field(description="AI では判断できず、人が確認すべきなら true")
+
 
     @field_validator("summary", check_fields=False)
     @classmethod
@@ -93,8 +93,13 @@ def extract_json(text):
     モデルは、JSON の前に説明の文を付けたり、```json ～ ``` で囲んだりすることがある。
     そこで、最初の「{」から最後の「}」までを取り出す。見つからなければ ValueError を出す。
     """
-    # TODO(コマ8 演習手順5): ここを実装する。いまは何もせずに、そのまま返している。
-    return text
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end < start:
+        raise ValueError("出力の中に JSON のオブジェクトが見つからない")
+
+    return text[start : end + 1]
+
 
 
 def parse_classification(text):
@@ -143,11 +148,21 @@ def classify(inquiry, call_llm, max_attempts, mode="json_schema"):
     messages = build_messages(inquiry, mode)
     errors = []
 
-    # TODO(コマ8 演習手順6): 検証に失敗したら、理由を伝えて出し直させる（max_attempts 回まで）。
-    #   max_attempts 回とも失敗したら、fallback_classification を使い、fallback=True で返す。
-    #   いまは1回だけ呼び、失敗したら例外のまま止まる。
-    text = call_llm(messages)
-    return ClassifyResult(parse_classification(text), 1, errors, False)
+    for attempt in range(1, max_attempts + 1):
+        text = call_llm(messages)
+        try:
+            return ClassifyResult(parse_classification(text), attempt, errors, False)
+
+        except ValueError as e:  # ValidationError も ValueError の一種
+            reason = describe_error(e)
+            errors.append(reason)
+            messages = messages + [
+                {"role": "assistant", "content": text},
+                {"role": "user", "content": retry_instruction(reason)},
+            ]
+
+    return ClassifyResult(fallback_classification(inquiry), max_attempts, errors, True)
+
 
 
 # =====================================================================
